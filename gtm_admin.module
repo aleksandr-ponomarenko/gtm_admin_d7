@@ -1,0 +1,148 @@
+<?php
+
+define('GTM_ADMIN_LISTING_PAGE_URL', 'admin/content/gtm-admin');
+define('GTM_ADMIN_LISTING_PAGE_ACCOUNT_URL', 'admin/content/gtm-admin');
+define('GTM_ADMIN_TAG_URL', 'admin/content/gtm-admin/tag');
+define('GTM_ADMIN_WORKSPACE_URL', 'admin/content/gtm-admin/workspace');
+
+module_load_include('inc', 'gtm_admin', 'includes/gtm_admin.google');
+
+/**
+ * Implements hook_menu().
+ */
+function gtm_admin_menu() {
+
+  $items['admin/config/search/gtm-admin-config'] = array(
+    'title' => 'GTM admin config',
+    'file' => 'includes/gtm_admin.admin.inc',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('gtm_admin_config_form'),
+    'access callback' => TRUE,
+  );
+
+  $items[GTM_ADMIN_LISTING_PAGE_URL] = array(
+    'title' => 'GTM admin list',
+    'file' => 'includes/gtm_admin.pages.inc',
+    'page callback' => 'gtm_admin_page',
+    'access callback' => TRUE,
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items[GTM_ADMIN_TAG_URL . '/manage/%/%/%/%'] = array(
+    'title' => 'GTM admin tag management',
+    'file' => 'includes/gtm_admin.actions.inc',
+    'page callback' => 'drupal_get_form',
+    'page arguments' =>  array('gtm_admin_tag_form', 5, 6, 7, 8),
+    'access callback' => TRUE,
+  );
+
+  $items[GTM_ADMIN_TAG_URL . '/delete/%/%/%/%'] = array(
+    'title' => 'GTM admin tag management',
+    'file' => 'includes/gtm_admin.actions.inc',
+    'page callback' => 'drupal_get_form',
+    'page arguments' =>  array('gtm_admin_tag_delete_form', 5, 6, 7, 8),
+    'access callback' => TRUE,
+  );
+
+  $items[GTM_ADMIN_WORKSPACE_URL . '/publish/%/%/%'] = array(
+    'title' => 'GTM admin tag management',
+    'file' => 'includes/gtm_admin.actions.inc',
+    'page callback' => 'drupal_get_form',
+    'page arguments' =>  array('gtm_admin_workspace_publish_form', 5, 6, 7),
+    'access callback' => TRUE,
+  );
+
+  $items[GTM_ADMIN_LISTING_PAGE_ACCOUNT_URL . '/%'] = array(
+    'title' => 'GTM admin list for account',
+    'file' => 'includes/gtm_admin.pages.inc',
+    'page callback' => 'gtm_admin_account_page',
+    'page arguments' =>  array(3),
+    'access callback' => TRUE,
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items[GTM_ADMIN_LISTING_PAGE_ACCOUNT_URL . '/%/%'] = array(
+    'title' => 'GTM admin list for container',
+    'file' => 'includes/gtm_admin.pages.inc',
+    'page callback' => 'gtm_admin_container_page',
+    'page arguments' =>  array(3, 4),
+    'access callback' => TRUE,
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  // Workspace page is unnecessary.
+  $items[GTM_ADMIN_LISTING_PAGE_ACCOUNT_URL . '/%/%/%'] = array(
+    'title' => 'GTM admin list for workspace',
+    'file' => 'includes/gtm_admin.pages.inc',
+    'page callback' => 'gtm_admin_workspace_page',
+    'page arguments' =>  array(4, 5, 6),
+    'access callback' => TRUE,
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+function gtm_admin_get_account_list() {
+  $service = _gtm_admin_get_google_gtm_service();
+  if (!$service) {
+    return $service;
+  }
+  $accounts = $service->accounts->listAccounts();
+
+  $return = array();
+
+  foreach ($accounts->getAccount() as $account) {
+    $return[$account->getAccountId()] = $account->getName();
+
+  }
+
+  return $return;
+}
+
+function gtm_admin_get_container_list($account_id) {
+  $service = _gtm_admin_get_google_gtm_service();
+  if (!$service) {
+    return $service;
+  }
+  $params = array('accounts' => $account_id);
+  $params_string = _gtm_admin_get_parent_string($params);
+  $containers = $service->accounts_containers->listAccountsContainers($params_string);
+
+  $return = array();
+
+  foreach ($containers->getContainer() as $container) {
+    $return[$container->getContainerId()] = $container->getName() . ' (' . $container->getPublicId() . ')';
+
+  }
+
+  return $return;
+}
+
+// Looks like we don't need this function at all?
+function gtm_admin_get_workspace_list($account_id, $container_id) {
+  $service = _gtm_admin_get_google_gtm_service();
+  if (!$service) {
+    return $service;
+  }
+  $params = array(
+    'accounts' => $account_id,
+    'containers' => $container_id,
+  );
+  $params_string = _gtm_admin_get_parent_string($params);
+  $workspaces = $service->accounts_containers_workspaces->listAccountsContainersWorkspaces($params_string);
+
+  $return = array();
+
+  foreach ($workspaces->getWorkspace() as $workspace) {
+    $return[$workspace->getWorkspaceId()] = $workspace->getName();
+  }
+
+  return $return;
+}
+
+function gtm_admin_get_container_content($account_id, $container_id) {
+  module_load_include('inc', 'gtm_admin', 'includes/gtm_admin.pages');
+
+  return gtm_admin_container_page($account_id, $container_id);
+}

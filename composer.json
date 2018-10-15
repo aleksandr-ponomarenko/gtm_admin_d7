@@ -1,0 +1,10 @@
+{
+  "name": "drupal/gtm_admin",
+  "description": "Mobile_Detect is a lightweight PHP class for detecting mobile devices.",
+  "type": "drupal-module",
+  "license": "GPL-2.0-or-later",
+  "minimum-stability": "dev",
+  "require": {
+    "google/apiclient": "^2.0"
+  }
+}

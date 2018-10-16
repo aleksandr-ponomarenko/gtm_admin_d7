@@ -1,5 +1,6 @@
 <?php
 
+// Factory for GTM service
 function _gtm_admin_get_google_gtm_service() {
   $service =& drupal_static(__FUNCTION__);
 
@@ -14,6 +15,7 @@ function _gtm_admin_get_google_gtm_service() {
   return $service;
 }
 
+// Get Google Client helper (with auth)
 function _gtm_admin_get_google_client() {
   $file_error = FALSE;
   $file_json = variable_get('gtm_admin_settings_credentials_file', '');
@@ -22,15 +24,21 @@ function _gtm_admin_get_google_client() {
   }
 
   $credentials_file = file_load($file_json);
-  if (!isset($credentials_file->uri) && empty($credentials_file->uri)) {
+  if (!isset($credentials_file->uri) || empty($credentials_file->uri)) {
+    $file_error = TRUE;
+  }
+
+  $credentials_file_path = drupal_realpath($credentials_file->uri);
+
+  if (!file_exists($credentials_file_path)) {
     $file_error = TRUE;
   }
 
   if ($file_error) {
-    watchdog('gtm-admin', 'Credential file not found, please visit settings page and set right one up.', array(), WATCHDOG_ERROR);
-    drupal_set_message(t('Credential file not found, please visit !settings_page and set right one up.', array(
-      '!settings_page' => l('settings page', 'admin/config/search/gtm-admin-config')
-    )), 'warning');
+    watchdog('gtm-admin', 'Credential file not found, please visit settings page and set right one up.', [], WATCHDOG_ERROR);
+    drupal_set_message(t('Credential file not found, please visit !settings_page and set right one up.', [
+      '!settings_page' => l('settings page', 'admin/config/search/gtm-admin-config'),
+    ]), 'warning');
     return FALSE;
   }
 
@@ -39,10 +47,8 @@ function _gtm_admin_get_google_client() {
     file_save($credentials_file);
   }
 
-  $credentials_file_path = drupal_realpath($credentials_file->uri);
-
   if (!class_exists('Google_Client')) {
-    watchdog('gtm-admin', 'Google api library not installed.', array(), WATCHDOG_ERROR);
+    watchdog('gtm-admin', 'Google api library not installed.', [], WATCHDOG_ERROR);
     drupal_set_message(t('Google api library not installed. Please read documentation and install it using composer.'), 'error');
     return FALSE;
   }
@@ -56,11 +62,13 @@ function _gtm_admin_get_google_client() {
   ]);
 
   switch (variable_get('gtm_admin_settings_credentials_type', 'service')) {
+    // Service account auth.
     case 'service':
       putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $credentials_file_path);
       $client->useApplicationDefaultCredentials();
       break;
 
+    // User account auth.
     case 'user':
       $client->setAuthConfig($credentials_file_path);
       $redirect_url = 'http://drupal7.org/admin/gtm-admin-page';
@@ -85,17 +93,18 @@ function _gtm_admin_get_google_client() {
       break;
 
     default:
-      watchdog('gtm-admin', 'Something goes wrong with Google authorisation, check settings.', array(), WATCHDOG_ERROR, url(GTM_ADMIN_LISTING_PAGE_URL));
-      drupal_set_message(t('Something goes wrong with Google authorisation, check !settings_page.', array(
-        '!settings_page' => l('settings page', 'admin/config/search/gtm-admin-config')
-      )), 'error');
+      watchdog('gtm-admin', 'Something goes wrong with Google authorisation, check settings.', [], WATCHDOG_ERROR, url(GTM_ADMIN_LISTING_PAGE_URL));
+      drupal_set_message(t('Something goes wrong with Google authorisation, check !settings_page.', [
+        '!settings_page' => l('settings page', 'admin/config/search/gtm-admin-config'),
+      ]), 'error');
       return FALSE;
   }
 
   return $client;
 }
 
-function _gtm_admin_get_parent_string($params = array()) {
+// Helper formatting fucntion.
+function _gtm_admin_get_parent_string($params = []) {
   $parent = '';
   foreach ($params as $key => $param) {
     if (!empty($parent)) {
@@ -104,14 +113,16 @@ function _gtm_admin_get_parent_string($params = array()) {
 
     if (!is_numeric($key)) {
       $parent .= $key . '/' . $param;
-    } else {
+    }
+    else {
       $parent .= $param;
     }
   }
   return $parent;
 }
 
-function _gtm_admin_get_param_string($params = array()) {
+// Helper formatting fucntion.
+function _gtm_admin_get_param_string($params = []) {
   $param_string = '';
   foreach ($params as $param) {
     if (!empty($param_string)) {

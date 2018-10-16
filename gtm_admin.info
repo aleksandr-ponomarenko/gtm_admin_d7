@@ -1,4 +1,6 @@
 name = GTM admin
-description = GTM admin module
+description = "GTM admin module - uses GTM API library and provides all tools to manage GTM content form Drupal and
+              simplified API for using module functionality in custom code"
 core = 7.x
-package = Custom
+package = Google Api
+configure = admin/config/search/gtm-admin-config

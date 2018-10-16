@@ -1,6 +1,6 @@
 {
   "name": "drupal/gtm_admin",
-  "description": "Mobile_Detect is a lightweight PHP class for detecting mobile devices.",
+  "description": "GTM admin module - uses GTM API library and provides all tools to manage GTM content form Drupal",
   "type": "drupal-module",
   "license": "GPL-2.0-or-later",
   "minimum-stability": "dev",
